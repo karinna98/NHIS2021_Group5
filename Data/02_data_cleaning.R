@@ -19,3 +19,4 @@ nhis_clean <- nhis_subset %>%
 dim (nhis_clean) # evaluates dimensions of 'nhis' clean data
 
 
+
