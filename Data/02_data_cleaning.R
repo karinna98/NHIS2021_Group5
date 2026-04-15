@@ -46,7 +46,7 @@ summary (nhis_clean) # provides a statistical summary of 'hint_clean' data
 
 view (nhis_clean) # view new clean data set 
 
-write_csv(nhis_clean, "data/nhis_clean.csv")
+write_csv(nhis_clean, "data/nhis_clean.csv") # saves new 'nhis_clean' to project data folder
 
 
 
