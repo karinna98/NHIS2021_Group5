@@ -20,7 +20,7 @@ dim (nhis_clean) # evaluates dimensions of 'nhis' clean data
 
 anyNA(nhis_clean) # examines 'nhis_clean' for any NA 
 
-summary (nhis_clean)
+summary (nhis_clean) # provides a summary of 'nhis_clean' data 
 
 nhis_clean <- nhis_clean %>% # selects 'nhis_clean' and create new version 
   mutate( # modify variables in data set
@@ -42,7 +42,9 @@ nhis_clean <- nhis_clean %>% # selects 'nhis_clean' and create new version
     )
   )
 
-summary (nhis_clean) # provides a statistical summary of 'hint_clean' data 
+summary (nhis_clean) # provides a statistical summary of 'nhis_clean' data 
+
+dim (nhis_clean) # examines dimensions of 'nhis_clean' data
 
 view (nhis_clean) # view new clean data set 
 
