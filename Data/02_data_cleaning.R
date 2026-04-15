@@ -18,5 +18,6 @@ nhis_clean <- nhis_subset %>%
 
 dim (nhis_clean) # evaluates dimensions of 'nhis' clean data
 
+anyNA(nhis_clean) # examines 'nhis_clean' for any NA 
 
 
