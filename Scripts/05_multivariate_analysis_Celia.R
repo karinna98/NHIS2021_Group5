@@ -25,3 +25,9 @@ library(psych)
 pairs.panels(
   nhis_clean[, c("AGEP_A", "WEIGHTLBTC_A", "HEIGHTTC_A")]
 )
+
+# Interpretation:
+# The scatter plot shows a positive relationship between height and weight,
+# meaning that taller individuals tend to weigh more. This pattern remains
+# similar across education levels. The correlation matrix also supports this
+# finding and shows a moderate positive relationship between height and weight.
