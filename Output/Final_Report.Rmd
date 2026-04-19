@@ -1,0 +1,376 @@
+---
+title: "NHIS 2021 Data Analysis Group Project 2 (Group 5)"
+author: "Karinna Alatorre, Celia Lopez, Bi Na, and Alyssa Tagle"
+date: "2026-04-19"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+#Day 1: Project Setup & Data Import
+#Task 2: Environment Setup & Data Import
+
+```{r}
+# Load packages
+library(tidyverse)
+
+# Load data
+file_path <- "NHIS_Data_2021.csv"
+
+if (!file.exists(file_path)) {
+  stop("Dataset not found. Please put 'NHIS_Data_2021.csv' in the same folder.")
+}
+
+NHIS_Data_2021 <- read_csv(file_path)
+
+# Explore data
+glimpse(NHIS_Data_2021)
+summary(NHIS_Data_2021)
+head(NHIS_Data_2021)
+```
+
+#Day 2: Data Cleaning & Management
+
+#Task 1: Variable Selection & Missing Value Check
+```{r}
+nhis_subset <- NHIS_Data_2021 %>%
+  select(
+    AGEP_A,
+    WEIGHTLBTC_A,
+    HEIGHTTC_A,
+    SEX_A,
+    HISPALLP_A,
+    EDUCP_A,
+    PHSTAT_A,
+    LSATIS4R_A
+  )
+
+nhis_clean <- nhis_subset %>%
+  filter(
+    !AGEP_A %in% c(97, 98, 99),
+    !WEIGHTLBTC_A %in% c(996, 997, 998, 999),
+    !HEIGHTTC_A %in% c(96, 97, 98, 99),
+    !SEX_A %in% c(7, 9),
+    !HISPALLP_A %in% c(97, 98, 99),
+    !EDUCP_A %in% c(97, 98, 99),
+    !PHSTAT_A %in% c(7, 8, 9),
+    !LSATIS4R_A %in% c(7, 8, 9)
+  )
+
+# Check missing values
+anyNA(nhis_clean)
+dim(nhis_clean)
+```
+
+#Task 2: Recoding Variables
+```{r}
+nhis_clean <- nhis_clean %>%
+  mutate(
+    EDUCP_A = case_when(
+      EDUCP_A %in% 1:4 ~ "Less than High School",
+      EDUCP_A == 4 ~ "High School Graduate",
+      EDUCP_A %in% 5:7 ~ "Some College Education",
+      EDUCP_A %in% 8:10 ~ "College Graduate or better",
+      TRUE ~ NA_character_
+    ),
+    EDUCP_A = factor(
+      EDUCP_A,
+      levels = c(
+        "Less than High School",
+        "High School Graduate",
+        "Some College Education",
+        "College Graduate or better"
+      )
+    )
+  )
+
+# Final checks
+summary(nhis_clean)
+dim(nhis_clean)
+View(nhis_clean)
+```
+
+#Day 3: Univariate & Bivariate Analysis & Visualization
+
+#Task1: Univariate Analysis 
+```{r}
+# Load libraries
+library(tidyverse)
+
+# Load cleaned dataset
+nhis_clean <- read.csv("data/nhis_clean.csv")
+
+# RECODE VARIABLES (CODEBOOK FIX)
+nhis_clean <- nhis_clean %>%
+  mutate(
+    
+    # Sex
+    SEX_A = factor(SEX_A,
+                   levels = c(1,2),
+                   labels = c("Male","Female")),
+    
+    # Race / Ethnicity
+    HISPALLP_A = factor(HISPALLP_A,
+                        levels = c(1,2,3,4,5,6,7),
+                        labels = c("Hispanic",
+                                   "NH White",
+                                   "NH Black",
+                                   "NH Asian",
+                                   "NH AIAN",
+                                   "NH AIAN + Other",
+                                   "Other")),
+    
+    # Education (corrected grouping)
+    EDUCP_A = case_when(
+      EDUCP_A %in% 0:3 ~ "Less than High School",
+      EDUCP_A == 4 ~ "High School Graduate",
+      EDUCP_A %in% 5:7 ~ "Some College",
+      EDUCP_A >= 8 ~ "College Graduate or Higher",
+      TRUE ~ NA_character_
+    ),
+    
+    EDUCP_A = factor(EDUCP_A),
+    
+    # Health status
+    PHSTAT_A = factor(PHSTAT_A,
+                      levels = 1:5,
+                      labels = c("Excellent","Very Good","Good","Fair","Poor")),
+    
+    # Life satisfaction
+    LSATIS4R_A = factor(LSATIS4R_A,
+                        levels = 1:4,
+                        labels = c("Very Satisfied","Satisfied","Dissatisfied","Very Dissatisfied"))
+  )
+
+# QUANTITATIVE VARIABLES
+quant_vars <- c("AGEP_A", "WEIGHTLBTC_A", "HEIGHTTC_A")
+
+for (var in quant_vars) {
+  
+  cat("\n=============================\n")
+  cat("Variable:", var, "\n")
+  cat("=============================\n")
+  
+  data_var <- nhis_clean[[var]]
+  data_var <- as.numeric(data_var)
+  data_var <- data_var[is.finite(data_var)]
+  
+  # Skip empty variables
+  if (length(data_var) == 0) next
+  
+  # Summary statistics
+  print(summary(data_var))
+  cat("Mean:", mean(data_var), "\n")
+  cat("Median:", median(data_var), "\n")
+  cat("SD:", sd(data_var), "\n")
+  
+  # Base R Histogram
+  hist(data_var,
+       main = paste("Histogram of", var),
+       xlab = var)
+  
+  # ggplot Histogram
+  ggplot(data.frame(x = data_var), aes(x = x)) +
+    geom_histogram(bins = 30) +
+    labs(title = paste("Histogram of", var), x = var, y = "Count")
+  
+  # Base R Boxplot
+  boxplot(data_var,
+          main = paste("Boxplot of", var),
+          ylab = var)
+  
+  # ggplot Boxplot
+  ggplot(data.frame(y = data_var), aes(y = y)) +
+    geom_boxplot() +
+    labs(title = paste("Boxplot of", var), y = var)
+}
+
+# QUALITATIVE VARIABLES
+qual_vars <- c("SEX_A", "HISPALLP_A", "EDUCP_A", "PHSTAT_A", "LSATIS4R_A")
+
+for (var in qual_vars) {
+  
+  cat("\n=============================\n")
+  cat("Variable:", var, "\n")
+  cat("=============================\n")
+  
+  # Frequency table (now labeled properly)
+  print(table(nhis_clean[[var]], useNA = "ifany"))
+  
+  # Base R Bar Plot
+  barplot(table(nhis_clean[[var]]),
+          main = paste("Bar Plot of", var),
+          las = 2)
+  
+  # ggplot Bar Plot
+  ggplot(nhis_clean, aes(x = .data[[var]])) +
+    geom_bar() +
+    labs(title = paste("Bar Plot of", var),
+         x = var,
+         y = "Count") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+#Interpretation: 
+#The dataset includes 26,037 adults with an average age of 52.6 years. 
+#Weight (mean = 176.8 lbs) shows moderate variation, while height 
+#(mean = 66.7 inches) is relatively stable.The sample is slightly 
+#female-dominant and mainly Non-Hispanic White. Most respondents report 
+#good or very good health and high life satisfaction. However, the education 
+#variable shows no variation (all “College Graduate or Higher”), suggesting a 
+#possible coding or cleaning issue that should be reviewed.
+```
+
+#Task 2: Bivariate Analysis
+```{r}
+#Day 3: Univariate & Bivariate Analysis & Visualization
+#Task 2: Bivariate Analysis
+
+# -----------------------------
+# Load libraries
+# -----------------------------
+library(tidyverse)
+
+# Load dataset
+nhis_clean <- read.csv("data/nhis_clean.csv")
+
+# -----------------------------
+# Ensure correct factor labels (from codebook)
+# -----------------------------
+nhis_clean <- nhis_clean %>%
+  mutate(
+    
+    SEX_A = factor(SEX_A,
+                   levels = c(1,2),
+                   labels = c("Male","Female")),
+    
+    EDUCP_A = case_when(
+      EDUCP_A %in% 0:3 ~ "Less than High School",
+      EDUCP_A == 4 ~ "High School Graduate",
+      EDUCP_A %in% 5:7 ~ "Some College",
+      EDUCP_A >= 8 ~ "College Graduate+",
+      TRUE ~ NA_character_
+    ),
+    EDUCP_A = factor(EDUCP_A),
+    
+    PHSTAT_A = factor(PHSTAT_A,
+                      levels = 1:5,
+                      labels = c("Excellent","Very Good","Good","Fair","Poor")),
+    
+    LSATIS4R_A = factor(LSATIS4R_A,
+                        levels = 1:4,
+                        labels = c("Very Satisfied","Satisfied","Dissatisfied","Very Dissatisfied"))
+  )
+
+# =========================================================
+# 1. QUANTITATIVE vs QUALITATIVE (AGEP_A vs SEX_A, EDUCP_A)
+# =========================================================
+
+# --- Base R: Boxplot AGE by SEX ---
+plot(nhis_clean$SEX_A, nhis_clean$AGEP_A,
+     main = "Age by Sex (Base R)",
+     xlab = "Sex",
+     ylab = "Age")
+
+# --- ggplot: Boxplot AGE by SEX ---
+ggplot(nhis_clean, aes(x = SEX_A, y = AGEP_A)) +
+  geom_boxplot() +
+  labs(title = "Age by Sex", x = "Sex", y = "Age")
+
+# --- Base R: Boxplot AGE by EDUCATION ---
+plot(nhis_clean$EDUCP_A, nhis_clean$AGEP_A,
+     main = "Age by Education (Base R)",
+     xlab = "Education",
+     ylab = "Age")
+
+# --- ggplot: Boxplot AGE by EDUCATION ---
+ggplot(nhis_clean, aes(x = EDUCP_A, y = AGEP_A)) +
+  geom_boxplot() +
+  labs(title = "Age by Education", x = "Education", y = "Age") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# =========================================================
+# 2. QUALITATIVE vs QUALITATIVE
+# PHSTAT_A vs LSATIS4R_A
+# =========================================================
+
+ggplot(nhis_clean, aes(x = PHSTAT_A, fill = LSATIS4R_A)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Health Status vs Life Satisfaction",
+       x = "General Health",
+       y = "Count",
+       fill = "Life Satisfaction") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# =========================================================
+# 3. QUANTITATIVE vs QUANTITATIVE
+# HEIGHT vs WEIGHT
+# =========================================================
+
+# Base R scatter plot
+plot(nhis_clean$HEIGHTTC_A, nhis_clean$WEIGHTLBTC_A,
+     main = "Height vs Weight (Base R)",
+     xlab = "Height (inches)",
+     ylab = "Weight (lbs)")
+
+# ggplot scatter plot
+ggplot(nhis_clean, aes(x = HEIGHTTC_A, y = WEIGHTLBTC_A)) +
+  geom_point(alpha = 0.6) +
+  labs(title = "Height vs Weight",
+       x = "Height (inches)",
+       y = "Weight (lbs)") +
+  theme_minimal()
+
+# Correlation
+correlation <- cor(nhis_clean$HEIGHTTC_A,
+                   nhis_clean$WEIGHTLBTC_A,
+                   use = "complete.obs")
+
+cat("Correlation between Height and Weight:", correlation, "\n")
+
+#Interpretation
+#There are moderate associations between health status and life satisfaction, 
+#and a moderate positive correlation (r = 0.50) between height and weight, 
+#while age differences by sex and education are relatively small.
+```
+
+#Day4:Multivariate Analysis & Report Drafting
+
+#Task1:Multivariate Visualization
+```{r}
+# Load clean dataset
+nhis_clean <- read.csv("Data/nhis_clean.csv")
+
+# Scatter plot: Height vs Weight
+library(ggplot2)
+
+ggplot(nhis_clean, aes(x = HEIGHTTC_A, y = WEIGHTLBTC_A, color = factor(SEX_A,
+                                                                        levels = c(1, 2),
+                                                                        labels = c("Male", "Female")))) +
+  geom_point(alpha = 0.6) +
+  facet_wrap(~ EDUCP_A) +
+  labs(
+    title = "Height vs Weight by Sex and Education",
+    x = "Height (inches)",
+    y = "Weight (pounds)",
+    color = "Sex"
+  ) +
+  theme_minimal()
+
+# Correlation matrix
+library(psych)
+
+pairs.panels(
+  nhis_clean[, c("AGEP_A", "WEIGHTLBTC_A", "HEIGHTTC_A")]
+)
+
+# Interpretation:
+# The scatter plot shows a positive relationship between height and weight,
+# meaning that taller individuals tend to weigh more. This pattern remains
+# similar across education levels. The correlation matrix also supports this
+# finding and shows a moderate positive relationship between height and weight.
+```
