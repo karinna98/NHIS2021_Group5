@@ -1,71 +1,94 @@
 ---
-title: "NHIS 2021 Analysis Report"
-author: "Celia Lopez"
-date: "2026-04-16"
+title: "NHIS 2021 Data Analysis Group Project 2 (Group 5)"
+author: "Karinna Alatorre, Celia Lopez, Bi Na, and Alyssa Tagle"
+date: "2026-04-19"
 output:
+  pdf_document: default
   html_document: default
-  word_document: default
----
----
-title: "NHIS 2021 Analysis Report"
-author: "Celia Lopez"
-date: "`r Sys.Date()`"
-output: word_document
 ---
 
 ```{r setup, include=FALSE}
-library(ggplot2)
-library(psych)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
-## Introduction
-
-This report analyzes data from the 2021 National Health Interview Survey (NHIS) to examine relationships between age, height, weight, sex, and education level. The goal is to explore patterns in the data using statistical analysis and visualization in R.
-
-## Methods
-
-The dataset was imported into R and coded to match the NHIS codebook.The key variables include age (AGEP_A), height (HEIGHTTC_A), weight (WEIGHTLBTC_A), sex (SEX_A), and education level (EDUCP_A).
-
-The univariate and bivariate analyses were conducted to understand variable distributions accross relationships. For multivariate analysis, a scatter plot was created to examine the relationship between height and weight.The points are colored by sex and separated by education level. A correlation matrix was also generated to evaluate relationships between age, height, and weight.
-
-## Results
+#Day 1: Project Setup & Data Import
+#Task 2: Environment Setup & Data Import
 
 ```{r}
-nhis_clean <- read.csv("Data/nhis_clean.csv")
+# Load packages
+library(tidyverse)
+
+# Load data
+file_path <- "NHIS_Data_2021.csv"
+
+if (!file.exists(file_path)) {
+  stop("Dataset not found. Please put 'NHIS_Data_2021.csv' in the same folder.")
+}
+
+NHIS_Data_2021 <- read_csv(file_path)
+
+# Explore data
+glimpse(NHIS_Data_2021)
+summary(NHIS_Data_2021)
+head(NHIS_Data_2021)
 ```
 
+#Day 2: Data Cleaning & Management
+#Task 1&2: Variable Selection & Missing Value Check & Recoding Variables
 ```{r}
-ggplot(nhis_clean, aes(
-  x = HEIGHTTC_A,
-  y = WEIGHTLBTC_A,
-  color = factor(SEX_A, levels = c(1, 2), labels = c("Male", "Female"))
-)) +
-  geom_point(alpha = 0.6) +
-  facet_wrap(~ EDUCP_A) +
-  labs(
-    title = "Height vs Weight by Sex and Education",
-    x = "Height (inches)",
-    y = "Weight (pounds)",
-    color = "Sex"
-  ) +
-  theme_minimal()
+nhis_subset <- NHIS_Data_2021 %>%
+  select(
+    AGEP_A,
+    WEIGHTLBTC_A,
+    HEIGHTTC_A,
+    SEX_A,
+    HISPALLP_A,
+    EDUCP_A,
+    PHSTAT_A,
+    LSATIS4R_A
+  )
+
+nhis_clean <- nhis_subset %>%
+  filter(
+    !AGEP_A %in% c(97, 98, 99),
+    !WEIGHTLBTC_A %in% c(996, 997, 998, 999),
+    !HEIGHTTC_A %in% c(96, 97, 98, 99),
+    !SEX_A %in% c(7, 9),
+    !HISPALLP_A %in% c(97, 98, 99),
+    !EDUCP_A %in% c(97, 98, 99),
+    !PHSTAT_A %in% c(7, 8, 9),
+    !LSATIS4R_A %in% c(7, 8, 9)
+  )
+
+# Check missing values
+anyNA(nhis_clean)
+dim(nhis_clean)
 ```
 
-The scatter plot shows a positive relationship between height and weight, meaning taller people usually weigh more. This pattern stays similar across different education levels for both males and females.
+#Task 2: Recoding Variables
 ```{r}
-pairs.panels(
-  nhis_clean[, c("AGEP_A", "WEIGHTLBTC_A", "HEIGHTTC_A")]
-)
-```
+nhis_clean <- nhis_clean %>%
+  mutate(
+    EDUCP_A = case_when(
+      EDUCP_A %in% 1:4 ~ "Less than High School",
+      EDUCP_A == 4 ~ "High School Graduate",
+      EDUCP_A %in% 5:7 ~ "Some College Education",
+      EDUCP_A %in% 8:10 ~ "College Graduate or better",
+      TRUE ~ NA_character_
+    ),
+    EDUCP_A = factor(
+      EDUCP_A,
+      levels = c(
+        "Less than High School",
+        "High School Graduate",
+        "Some College Education",
+        "College Graduate or better"
+      )
+    )
+  )
 
-The correlation matrix supports this, showing a moderate positive relationship between height and weight. Age, on the other hand, has a weaker connection with both height and weight.
+# Final checks
+summary(nhis_clean)
+dim(nhis_clean)
+View(nhis_clean)
 
-## Discussion
-
-The results show that height and weight are closely connected, and this pattern stays about the same across different education levels and for both males and females. The multivariate graph makes it easier to understand because it lets you compare different groups all at once.
-
-One limitation is that only a few variables were used, so it might not include everything that affects a person’s height and weight.
-
-## Conclusion
-
-In conclusion, the analysis shows a clear positive relationship between height and weight. The multivariate graph makes it easier to see how this relationship looks across different sexes and education groups. Overall, this project shows how R can be used to study and visualize public health data in a clear and simple way.
